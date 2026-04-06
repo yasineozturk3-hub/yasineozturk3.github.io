@@ -1,4 +1,7 @@
 // ── Products data ──
+// To add images: put your image files in an "images" folder next to index.html,
+// then list them like: images: ["images/cat320-1.jpg", "images/cat320-2.jpg"]
+// Leave images: [] to show the emoji placeholder instead.
 const products = [
   {
     id: 1,
@@ -12,6 +15,7 @@ const products = [
     specs: ["20-ton class", "Cat C7.1 engine", "Long reach boom"],
     desc: "Well-maintained hydraulic excavator, ideal for site prep, trenching, and demolition. Full service records available.",
     icon: "🏗️",
+    images: ["images/excavator.jpg]",]
   },
   {
     id: 2,
@@ -25,6 +29,7 @@ const products = [
     specs: ["4.5 yd³ bucket", "Komatsu SAA6D engine", "AC cab"],
     desc: "High-capacity wheel loader with excellent visibility and fuel efficiency. Suitable for quarry, aggregate, and earthmoving.",
     icon: "🚛",
+    images: [],
   },
   {
     id: 3,
@@ -38,6 +43,7 @@ const products = [
     specs: ["40-ton payload", "6×6 drive", "Onboard weighing"],
     desc: "Heavy-duty articulated dump truck built for extreme terrain. Excellent traction and load control on any job site.",
     icon: "🚚",
+    images: [],
   },
   {
     id: 4,
@@ -51,6 +57,7 @@ const products = [
     specs: ["175 hp", "Semi-U blade", "Grade control ready"],
     desc: "Brand-new John Deere dozer with SmartGrade integration capability. Powerful, efficient, and operator-friendly design.",
     icon: "🚜",
+    images: [],
   },
   {
     id: 5,
@@ -64,6 +71,7 @@ const products = [
     specs: ["100-ton capacity", "60m main boom", "All-terrain chassis"],
     desc: "Versatile all-terrain mobile crane with excellent lift capacity. Comes with full documentation and recent load test certification.",
     icon: "🏭",
+    images: [],
   },
   {
     id: 6,
@@ -77,6 +85,7 @@ const products = [
     specs: ["13-ton roller", "Smooth drum", "ECONOMIZER system"],
     desc: "Single-drum vibratory roller with compaction measurement. Great for road base and large fill compaction projects.",
     icon: "⚙️",
+    images: [],
   },
   {
     id: 7,
@@ -90,6 +99,7 @@ const products = [
     specs: ["150-ton capacity", "11.6m carrier", "Megatrak suspension"],
     desc: "Premium all-terrain crane with outstanding reach and lifting capacity. Well-maintained with complete service history.",
     icon: "🏭",
+    images: [],
   },
   {
     id: 8,
@@ -103,6 +113,7 @@ const products = [
     specs: ["9-ton", "Dual drum", "Oscillation option"],
     desc: "New tandem roller with optional oscillation mode for sensitive compaction near structures. Ideal for asphalt paving.",
     icon: "⚙️",
+    images: [],
   },
   {
     id: 9,
@@ -116,6 +127,7 @@ const products = [
     specs: ["35-ton class", "HIOS III hydraulics", "ZAXIS system"],
     desc: "Low-hour excavator with intelligent machine control. Precision digging and excellent fuel economy for heavy-duty work.",
     icon: "🏗️",
+    images: [],
   },
   {
     id: 10,
@@ -128,7 +140,9 @@ const products = [
     hours: "New",
     specs: ["9-ton", "Dual drum", "Oscillation option"],
     desc: "New tandem roller with optional oscillation mode for sensitive compaction near structures. Ideal for asphalt paving.",
-    icon: "⚙️",}
+    icon: "⚙️",
+    images: [],
+  },
 ];
 
 const categories = [
@@ -154,6 +168,77 @@ function renderFilters() {
   });
 }
 
+// ── Build carousel HTML for a product ──
+function buildCarousel(p) {
+  const badgeClass = p.condition === "new" ? "new" : "used";
+  const badgeLabel = p.condition === "new" ? "New" : "Used";
+  const hasImages = p.images && p.images.length > 0;
+
+  let slidesHtml = "";
+  if (hasImages) {
+    slidesHtml = p.images.map(src =>
+      `<div class="carousel-slide"><img src="${src}" alt="${p.name}" loading="lazy" /></div>`
+    ).join("");
+  } else {
+    slidesHtml = `<div class="carousel-slide"><div class="carousel-placeholder">${p.icon}</div></div>`;
+  }
+
+  const multipleImages = hasImages && p.images.length > 1;
+
+  return `
+    <div class="carousel" data-index="0">
+      <div class="carousel-track">${slidesHtml}</div>
+      <span class="product-badge ${badgeClass}">${badgeLabel}</span>
+      ${multipleImages ? `
+        <button class="carousel-btn prev" aria-label="Previous">&#8592;</button>
+        <button class="carousel-btn next" aria-label="Next">&#8594;</button>
+        <div class="carousel-dots">
+          ${p.images.map((_, i) => `<button class="carousel-dot ${i === 0 ? "active" : ""}" data-i="${i}"></button>`).join("")}
+        </div>
+        <span class="carousel-counter">1 / ${p.images.length}</span>
+      ` : ""}
+    </div>`;
+}
+
+// ── Wire up carousel controls for a card ──
+function initCarousel(card, totalSlides) {
+  if (totalSlides <= 1) return;
+
+  const carousel = card.querySelector(".carousel");
+  const track    = carousel.querySelector(".carousel-track");
+  const dots     = carousel.querySelectorAll(".carousel-dot");
+  const counter  = carousel.querySelector(".carousel-counter");
+  const prevBtn  = carousel.querySelector(".carousel-btn.prev");
+  const nextBtn  = carousel.querySelector(".carousel-btn.next");
+
+  function goTo(idx) {
+    carousel.dataset.index = idx;
+    track.style.transform = `translateX(-${idx * 100}%)`;
+    dots.forEach((d, i) => d.classList.toggle("active", i === idx));
+    counter.textContent = `${idx + 1} / ${totalSlides}`;
+    prevBtn.classList.toggle("hidden", idx === 0);
+    nextBtn.classList.toggle("hidden", idx === totalSlides - 1);
+  }
+
+  // Hide prev on first slide initially
+  prevBtn.classList.add("hidden");
+
+  prevBtn.addEventListener("click", e => {
+    e.stopPropagation();
+    goTo(Math.max(0, +carousel.dataset.index - 1));
+  });
+  nextBtn.addEventListener("click", e => {
+    e.stopPropagation();
+    goTo(Math.min(totalSlides - 1, +carousel.dataset.index + 1));
+  });
+  dots.forEach(dot => {
+    dot.addEventListener("click", e => {
+      e.stopPropagation();
+      goTo(+dot.dataset.i);
+    });
+  });
+}
+
 // ── Render product cards ──
 function renderProducts() {
   const grid = document.getElementById("products-grid");
@@ -162,16 +247,11 @@ function renderProducts() {
     card.className = "product-card";
     card.dataset.cat = p.category;
 
-    const badgeClass = p.condition === "new" ? "new" : "used";
-    const badgeLabel = p.condition === "new" ? "New" : "Used";
-
     const specsHtml = p.specs.map(s => `<span class="spec-tag">${s}</span>`).join("");
+    const totalSlides = p.images && p.images.length > 0 ? p.images.length : 1;
 
     card.innerHTML = `
-      <div style="position:relative">
-        <div class="product-img-placeholder">${p.icon}</div>
-        <span class="product-badge ${badgeClass}">${badgeLabel}</span>
-      </div>
+      ${buildCarousel(p)}
       <div class="product-body">
         <div class="product-category">${p.categoryLabel}</div>
         <div class="product-name">${p.name}</div>
@@ -185,10 +265,11 @@ function renderProducts() {
             ${p.price}
             <small>Contact for financing</small>
           </div>
-          <button class="btn-inquire" data-id="${p.id}">Inquire</button>
+          <button class="btn-inquire">Inquire</button>
         </div>
       </div>`;
 
+    initCarousel(card, totalSlides);
     card.querySelector(".btn-inquire").addEventListener("click", () => openModal(p));
     grid.appendChild(card);
   });
